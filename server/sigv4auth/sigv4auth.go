@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	sigv4clientutil "github.com/agile-security/sigv4util/client"
+	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
 )
 
 type Authenticator interface {
