@@ -1,4 +1,4 @@
-module github.com/agile-security/sigv4util
+module github.com/debugging-sucks/sigv4util
 
 go 1.23.1
 

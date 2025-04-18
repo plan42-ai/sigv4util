@@ -12,7 +12,7 @@ Go module used for SigV4 auth in Agile Security services
 1. Import the module
 ```go
 import (
-	sigv4clientutil "github.com/agile-security/sigv4util/client"
+	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
 )
 ```
 
@@ -36,7 +36,7 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/agile-security/sigv4util/server/sigv4auth"
+	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
 	"github.com/gorilla/mux"
 )
 
@@ -74,7 +74,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/agile-security/sigv4util/server/sigv4auth"
+	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
 	"github.com/samber/lo"
 
 	"github.com/gorilla/mux"
@@ -98,4 +98,4 @@ func IsAuthorized(invoker sigv4auth.Invoker, allowedRoleARNs []string) bool {
 	return lo.Contains(allowedRoleARNs, invoker.Caller.ARN)
 }
 ```
-See server code in https://github.com/agile-security/metadata-service/tree/main/internal/rest for details.
+See server code in https://github.com/debugging-sucks/metadata-service/tree/main/internal/rest for details.

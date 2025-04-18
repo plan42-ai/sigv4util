@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	sigv4clientutil "github.com/agile-security/sigv4util/client"
-	"github.com/agile-security/sigv4util/server/sigv4auth"
+	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
+	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
 	"github.com/stretchr/testify/require"
 )
 
