@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -305,12 +305,9 @@ func AddAuthHeader(ctx context.Context, req *http.Request, creds aws.Credentials
 	if err != nil {
 		return err
 	}
-	encodedBytes, err := json.Marshal(buf.String())
-	if err != nil {
-		return err
-	}
+	encoded := base64.StdEncoding.EncodeToString(buf.Bytes())
 
-	req.Header.Add("Authorization", string(encodedBytes))
+	req.Header.Add("Authorization", "sts:GetCallerIdentity "+encoded)
 	return nil
 }
 

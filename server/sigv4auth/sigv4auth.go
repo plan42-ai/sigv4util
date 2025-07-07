@@ -3,6 +3,7 @@ package sigv4auth
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -75,14 +76,19 @@ func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *
 		return Invoker{}, NewMultipleAuthHeadersError(headerName)
 	}
 
-	var embeddedRequestStr string
-	err := json.Unmarshal([]byte(headerValues[0]), &embeddedRequestStr)
-	if err != nil {
-		logger.ErrorContext(req.Context(), "unable to json decode auth header", "header", headerName, "error", err)
+	parts := strings.SplitN(headerValues[0], " ", 2)
+	if len(parts) != 2 || parts[0] != "sts:GetCallerIdentity" {
+		logger.ErrorContext(req.Context(), "invalid auth header format", "header", headerName)
 		return Invoker{}, NewBadAuthHeaderError(headerName)
 	}
 
-	embeddedReq, err := ParseRequest(embeddedRequestStr)
+	decoded, err := base64.StdEncoding.DecodeString(parts[1])
+	if err != nil {
+		logger.ErrorContext(req.Context(), "unable to base64 decode auth header", "header", headerName, "error", err)
+		return Invoker{}, NewBadAuthHeaderError(headerName)
+	}
+
+	embeddedReq, err := ParseRequest(string(decoded))
 	if err != nil {
 		logger.ErrorContext(req.Context(), "unable to parse auth header", "header", headerName, "error", err)
 		return Invoker{}, NewBadAuthHeaderError(headerName)
