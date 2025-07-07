@@ -27,7 +27,7 @@ func TestComputeCanonicalRequestHash(t *testing.T) {
 
 func TestGetHashHeaders(t *testing.T) {
 	req, _ := http.NewRequest("GET", "https://example.com", nil)
-	req.Header.Add("X-AgileSecurity-Signed-Headers", "host")
+	req.Header.Add("X-EventHorizon-SignedHeaders", "host")
 
 	headers := GetHashHeaders(req)
 	assert.Contains(t, headers, "host")
