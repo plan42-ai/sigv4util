@@ -16,6 +16,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/debugging-sucks/clock"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 )
@@ -266,7 +268,7 @@ func HexSha(data []byte) string {
 	return hex.EncodeToString(res[:])
 }
 
-func AddAuthHeaders(ctx context.Context, req *http.Request, cfg *aws.Config, region string) error {
+func AddAuthHeaders(ctx context.Context, req *http.Request, cfg *aws.Config, region string, clk clock.Clock) error {
 	hashedHeaders := GetHashHeaders(req)
 
 	requestHash, err := ComputeCanonicalRequestHash(req, hashedHeaders)
@@ -280,7 +282,7 @@ func AddAuthHeaders(ctx context.Context, req *http.Request, cfg *aws.Config, reg
 		return err
 	}
 
-	err = AddAuthHeader(ctx, req, creds, signer, requestHash, region)
+	err = AddAuthHeader(ctx, req, creds, signer, requestHash, region, clk)
 	if err != nil {
 		return err
 	}
@@ -288,12 +290,12 @@ func AddAuthHeaders(ctx context.Context, req *http.Request, cfg *aws.Config, reg
 	return nil
 }
 
-func AddAuthHeader(ctx context.Context, req *http.Request, creds aws.Credentials, signer *v4.Signer, requestHash string, region string) error {
+func AddAuthHeader(ctx context.Context, req *http.Request, creds aws.Credentials, signer *v4.Signer, requestHash string, region string, clk clock.Clock) error {
 	stsReq, stsBodyHash, err := CreateStsReq(requestHash, region)
 	if err != nil {
 		return err
 	}
-	now := time.Now()
+	now := clk.Now()
 
 	err = signer.SignHTTP(ctx, creds, stsReq, stsBodyHash, "sts", region, now)
 	if err != nil {

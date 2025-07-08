@@ -15,11 +15,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/debugging-sucks/clock"
+
 	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
 )
 
 type Authenticator interface {
-	Authenticate(req *http.Request, region string, logger *slog.Logger) (Invoker, error)
+	Authenticate(req *http.Request, region string, logger *slog.Logger, clk clock.Clock) (Invoker, error)
 }
 
 type Service struct {
@@ -65,7 +67,7 @@ func ParseRequest(requestStr string) (*http.Request, error) {
 	return ret, nil
 }
 
-func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *slog.Logger) (Invoker, error) {
+func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *slog.Logger, clk clock.Clock) (Invoker, error) {
 	headerName := textproto.CanonicalMIMEHeaderKey("Authorization")
 	headerValues := req.Header.Values(headerName)
 	if len(headerValues) == 0 {
@@ -94,7 +96,7 @@ func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *
 		return Invoker{}, NewBadAuthHeaderError(headerName)
 	}
 
-	err = VerifyStsReq(req, embeddedReq, currentRegion, logger)
+	err = VerifyStsReq(req, embeddedReq, currentRegion, logger, clk)
 	if err != nil {
 		logger.ErrorContext(req.Context(), "invalid auth header", "header", headerName, "error", err)
 		return Invoker{}, NewBadAuthHeaderError(headerName)
@@ -166,7 +168,7 @@ func IsAssumeRoleArn(arn string) bool {
 	return split[0] == "arn" && split[2] == "sts" && strings.HasPrefix(split[5], "assumed-role/")
 }
 
-func VerifyStsReq(origReq *http.Request, stsReq *http.Request, currentRegion string, logger *slog.Logger) error {
+func VerifyStsReq(origReq *http.Request, stsReq *http.Request, currentRegion string, logger *slog.Logger, clk clock.Clock) error {
 	return verify(
 		origReq,
 		stsReq,
@@ -175,7 +177,7 @@ func VerifyStsReq(origReq *http.Request, stsReq *http.Request, currentRegion str
 		VerifyRootPath(),
 		VerifyAcceptJSON(),
 		VerifyContentType(),
-		VerifyAmzonDate(),
+		VerifyAmzonDate(clk),
 		VerifyHost(currentRegion),
 		VerifyBody(),
 		VerifyOrigHash(logger),
@@ -243,7 +245,7 @@ func VerifyHost(region string) Verifier {
 	}
 }
 
-func VerifyAmzonDate() Verifier {
+func VerifyAmzonDate(clk clock.Clock) Verifier {
 	return func(_, stsReq *http.Request) error {
 		amzDate, err := getHeader(stsReq, "X-Amz-Date")
 		if err != nil {
@@ -254,7 +256,7 @@ func VerifyAmzonDate() Verifier {
 		if err != nil {
 			return fmt.Errorf("unable to parse 'X-Amz-Date' header: %w", err)
 		}
-		if time.Since(t).Abs() > 5*time.Minute {
+		if clk.Now().Sub(t).Abs() > 5*time.Minute {
 			return errors.New("'X-Amz-Date' header has expired")
 		}
 		return nil

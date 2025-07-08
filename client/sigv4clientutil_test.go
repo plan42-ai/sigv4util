@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/debugging-sucks/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -116,7 +117,7 @@ func TestAddAuthHeaders(t *testing.T) {
 		Region: "us-west-2",
 	}
 
-	err := AddAuthHeaders(context.Background(), req, cfg, "us-west-2")
+	err := AddAuthHeaders(context.Background(), req, cfg, "us-west-2", clock.RealClock{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, req.Header.Get("Authorization"))
 }
@@ -132,7 +133,7 @@ func TestAddAuthHeader(t *testing.T) {
 	requestHash := "testhash"
 	region := "us-west-2"
 
-	err := AddAuthHeader(context.Background(), req, creds, signer, requestHash, region)
+	err := AddAuthHeader(context.Background(), req, creds, signer, requestHash, region, clock.RealClock{})
 	assert.NoError(t, err)
 	assert.NotEmpty(t, req.Header.Get("Authorization"))
 }
