@@ -2,6 +2,7 @@ package sigv4auth_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -10,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
 	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
 	"github.com/stretchr/testify/require"
@@ -184,17 +187,19 @@ func createTestSTSRequest(t *testing.T) *http.Request {
 func createTestRequest(t *testing.T) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	// Generate the current X-Amz-Date to ensure it's valid during the test.
-	currentTime := time.Now().UTC().Format("20060102T150405Z")
+	cfg := &aws.Config{
+		Credentials: aws.NewCredentialsCache(credentials.StaticCredentialsProvider{
+			Value: aws.Credentials{
+				AccessKeyID:     "AKID",
+				SecretAccessKey: "SECRET",
+				SessionToken:    "TOKEN",
+			},
+		}),
+		Region: "us-west-2",
+	}
 
-	// Generate a canonical request hash
-	hashedHeaders := sigv4clientutil.GetHashHeaders(req)
-	actualHash, err := sigv4clientutil.ComputeCanonicalRequestHash(req, hashedHeaders)
+	err := sigv4clientutil.AddAuthHeaders(context.Background(), req, cfg, "us-west-2")
 	require.NoError(t, err)
-
-	authorizationHeader := fmt.Sprintf(`"POST / HTTP/1.1\r\nHost: sts.us-west-2.amazonaws.com\r\nUser-Agent: Go-http-client/1.1\r\nTransfer-Encoding: chunked\r\nAccept: application/json\r\nAccept-Encoding: identity\r\nAuthorization: AWS4-HMAC-SHA256 Credential=ASIAVVZON6BAB6K5XD5E/20240914/us-west-2/sts/aws4_request, SignedHeaders=accept;accept-encoding;content-type;host;x-agilesecurity-request-hash;x-amz-date;x-amz-security-token, Signature=86c2c6dc7cd41fbd058dafc329907cb02d4f6a81ab4c26faf86a613cd36e9450\r\nContent-Type: application/x-www-form-urlencoded\r\nX-Agilesecurity-Request-Hash: %s\r\nX-Amz-Date: %s\r\nX-Amz-Security-Token: IQoJb3JpZ2luX2VjEKb//////////wEaCXVzLXdlc3QtMiJGMEQCIEWyoF4XDqJ2WzKabz+CU/FaGdDy6uiDs20HXqkEdEIKAiAQzMySHtJngdOQLuR52l/7sq1ZVoBZcj8IQe1MQPo+9iqRAwjP//////////8BEAAaDDM5MDQwMjUzNTQ4OCIM4QPgqmeHWtiwdNNgKuUCbZu/MVB82CczMJ/DXLInwFbRqJ7wYOVunHgaz3RhCk85fy12rsF8pJn8gm0qRaAxABr+zmHJhCjLujJHSVnoz53awujBbS8Ujs1rHcZdkhD7Goxk213aQqnkkl2MjrdZt8iYguK9NyRsc5dVM1LOxed/TfVBTkyyx1qw+tZkZEi3Z4pOXlvXczH/8+wMxQGaWVaZ40wQJtZ1tkNvxX+TEpmin53u+HuFpYLYvPIIx6T1yVypjyFbYrgLZZjy0EU9X4KEoqiMoYzsfzuRhelN/8he8CotqawAVy5Kg7eDYuyr4H6V+qkxlbfJVNa9WyBuzmR8dGlp+UQd4wm4Thu/Ijelxmno3IPmTanFnDo/+XbHfbuYucV98lgEMa+Mne0ZS6AMVym/p3RgqYohXmZYG2Vuf8u3wAsO5+LhEUAS4Ysxvj4g1zSe8tCDjiGLt6YeyKnHfYYeI3NBo0GTKuhwmsq0pU61MIXDlLcGOqcBY8uzyC16Xm1DHzA1qoeDz5ZSVWvcZTP7gPZsDHzjQNJoIuOeWw28G5m7pZFOFDFGCz6zL+0sVMQh85uuci5SZoFnHnfTOB2hfidzjx1p5sAcxT7CY7drK7ItJqHfvOrc6/uIxwTXF5PS2thxtBBlmnBaopmDCRzRpOkVBo+Ybn+xOabm/2lWITgPQ+EEp7WBrZz5OqX8h85kYemIGCntqutk+e3KGHo=\r\n\r\n2d\r\nAction=GetCallerIdentity\u0026Version=2011-06-15\r\n\r\n0\r\n\r\n"`, actualHash, currentTime)
-
-	req.Header.Set("Authorization", authorizationHeader)
 
 	return req
 }
@@ -317,7 +322,7 @@ func TestAuthenticate_ResponseStatusNotOK(t *testing.T) {
 func TestAuthenticate_VerifyStsReqError(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	req := createTestRequest(t)
-	req.Header.Set("Authorization", `{"key":"value"}`)
+	req.Header.Set("Authorization", "sts:GetCallerIdentity aW52YWxpZA==")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
 	_, err := authService.Authenticate(req, "us-west-2", logger)
@@ -327,7 +332,7 @@ func TestAuthenticate_VerifyStsReqError(t *testing.T) {
 func TestAuthenticate_ParseRequestError(t *testing.T) {
 	logger := slog.New(slog.NewJSONHandler(io.Discard, nil))
 	req := createTestRequest(t)
-	req.Header.Set("Authorization", `{"key":"value"}`)
+	req.Header.Set("Authorization", "sts:GetCallerIdentity YWJj")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
 	_, err := authService.Authenticate(req, "us-west-2", logger)
