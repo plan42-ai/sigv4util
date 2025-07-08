@@ -39,7 +39,7 @@ func ComputeCanonicalRequestHash(req *http.Request, hashedHeaders map[string]boo
 }
 
 func GetHashHeaders(req *http.Request) map[string]bool {
-	headerList := req.Header.Get("X-AgileSecurity-Signed-Headers")
+	headerList := req.Header.Get("X-EventHorizon-SignedHeaders")
 	if headerList != "" {
 		return stringToSet(headerList)
 	}
@@ -52,9 +52,9 @@ func GetHashHeaders(req *http.Request) map[string]bool {
 		}
 		hashedHeaders = append(hashedHeaders, headerName)
 	}
-	hashedHeaders = append(hashedHeaders, textproto.CanonicalMIMEHeaderKey("X-AgileSecurity-Signed-Headers"))
+	hashedHeaders = append(hashedHeaders, textproto.CanonicalMIMEHeaderKey("X-EventHorizon-SignedHeaders"))
 	slices.Sort(hashedHeaders)
-	req.Header.Add("X-AgileSecurity-Signed-Headers", strings.Join(hashedHeaders, ";"))
+	req.Header.Add("X-EventHorizon-SignedHeaders", strings.Join(hashedHeaders, ";"))
 	return arrayToSet(hashedHeaders)
 }
 
@@ -322,7 +322,7 @@ func CreateStsReq(requestHash string, region string) (*http.Request, string, err
 	header.Add("X-Amz-Date", time.Now().Format("20060102T150405Z"))
 	header.Add("Accept-Encoding", "identity")
 	header.Add("Accept", "application/json")
-	header.Add("X-AgileSecurity-Request-Hash", requestHash)
+	header.Add("X-EventHorizon-Request-Hash", requestHash)
 
 	bodyStr := "Action=GetCallerIdentity&Version=2011-06-15\r\n"
 	body := io.NopCloser(bytes.NewBuffer([]byte(bodyStr)))
