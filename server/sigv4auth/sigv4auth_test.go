@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/debugging-sucks/clock"
 	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
 	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
 	"github.com/stretchr/testify/require"
@@ -34,7 +35,7 @@ func TestAuthenticate_InvalidAuthHeader(t *testing.T) {
 	// Test with invalid Authorization header (missing)
 	req.Header.Del("Authorization")
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{}) // Inject mock client
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -45,7 +46,7 @@ func TestAuthenticate_MultipleAuthHeaders(t *testing.T) {
 	// Test with multiple Authorization headers
 	req.Header.Add("Authorization", `{"key":"value"}`)
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{}) // Inject mock client
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "multiple 'Authorization' headers")
 }
@@ -111,7 +112,7 @@ func TestVerifyAmzonDate_Expired(t *testing.T) {
 
 	// Set an expired X-Amz-Date header
 	stsReq.Header.Set("X-Amz-Date", "20200101T120000Z")
-	err := sigv4auth.VerifyAmzonDate()(origReq, stsReq)
+	err := sigv4auth.VerifyAmzonDate(clock.RealClock{})(origReq, stsReq)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "'X-Amz-Date' header has expired")
 }
@@ -122,7 +123,7 @@ func TestVerifyAmzonDate_Valid(t *testing.T) {
 
 	// Set a valid X-Amz-Date header
 	stsReq.Header.Set("X-Amz-Date", time.Now().UTC().Format("20060102T150405Z"))
-	err := sigv4auth.VerifyAmzonDate()(origReq, stsReq)
+	err := sigv4auth.VerifyAmzonDate(clock.RealClock{})(origReq, stsReq)
 	require.NoError(t, err)
 }
 
@@ -198,7 +199,7 @@ func createTestRequest(t *testing.T) *http.Request {
 		Region: "us-west-2",
 	}
 
-	err := sigv4clientutil.AddAuthHeaders(context.Background(), req, cfg, "us-west-2")
+	err := sigv4clientutil.AddAuthHeaders(context.Background(), req, cfg, "us-west-2", clock.RealClock{})
 	require.NoError(t, err)
 
 	return req
@@ -217,7 +218,7 @@ func TestAuthenticate_ClientDoError(t *testing.T) {
 	authService := sigv4auth.NewAuthService(mockClient)
 
 	// Call the Authenticate function and expect an error from the mock client.
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -240,7 +241,7 @@ func TestAuthenticate_NotAssumeRoleArn(t *testing.T) {
 	}
 
 	authService := sigv4auth.NewAuthService(mockClient)
-	invoker, err := authService.Authenticate(req, "us-west-2", logger)
+	invoker, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.NoError(t, err)
 	require.Equal(t, "arn:aws:iam::123456789012:user/user-name", invoker.Caller.ARN)
 }
@@ -264,7 +265,7 @@ func TestAuthenticate_IsAssumeRoleArn(t *testing.T) {
 	}
 
 	authService := sigv4auth.NewAuthService(mockClient)
-	invoker, err := authService.Authenticate(req, "us-west-2", logger)
+	invoker, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.NoError(t, err)
 	require.Equal(t, "arn:aws:iam::123456789012:role/role-name", invoker.Caller.ARN)
 }
@@ -282,7 +283,7 @@ func TestAuthenticate_JSONDecodeError(t *testing.T) {
 	}
 
 	authService := sigv4auth.NewAuthService(mockClient)
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -299,7 +300,7 @@ func TestAuthenticate_InvalidContentType(t *testing.T) {
 	}
 
 	authService := sigv4auth.NewAuthService(mockClient)
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -315,7 +316,7 @@ func TestAuthenticate_ResponseStatusNotOK(t *testing.T) {
 	}
 
 	authService := sigv4auth.NewAuthService(mockClient)
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -325,7 +326,7 @@ func TestAuthenticate_VerifyStsReqError(t *testing.T) {
 	req.Header.Set("Authorization", "sts:GetCallerIdentity aW52YWxpZA==")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -335,7 +336,7 @@ func TestAuthenticate_ParseRequestError(t *testing.T) {
 	req.Header.Set("Authorization", "sts:GetCallerIdentity YWJj")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -345,7 +346,7 @@ func TestAuthenticate_BadAuthHeader(t *testing.T) {
 	req.Header.Set("Authorization", "invalid-json")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }
 
@@ -355,6 +356,6 @@ func TestAuthenticate_NoAuthHeader(t *testing.T) {
 	req.Header.Del("Authorization")
 
 	authService := sigv4auth.NewAuthService(&mockHTTPClient{})
-	_, err := authService.Authenticate(req, "us-west-2", logger)
+	_, err := authService.Authenticate(req, "us-west-2", logger, clock.RealClock{})
 	require.Error(t, err)
 }

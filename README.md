@@ -12,13 +12,14 @@ Go module used for SigV4 auth in Agile Security services
 1. Import the module
 ```go
 import (
-	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
+        sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
+        "github.com/debugging-sucks/clock"
 )
 ```
 
 2. Add the SigV4 auth header to the HTTP request
 ```go
-	err = sigv4clientutil.AddAuthHeaders(ctx, httpReq, c.cfg, c.cfg.Region)
+       err = sigv4clientutil.AddAuthHeaders(ctx, httpReq, c.cfg, c.cfg.Region, clock.RealClock{})
 	if err != nil {
 		return resp, err
 	}
@@ -32,12 +33,13 @@ See client code in https://github.com/agile-security/metadata for details.
 package rest
 
 import (
-	"context"
-	"log/slog"
-	"net/http"
+        "context"
+        "log/slog"
+        "net/http"
 
-	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
-	"github.com/gorilla/mux"
+        "github.com/debugging-sucks/clock"
+        "github.com/debugging-sucks/sigv4util/server/sigv4auth"
+        "github.com/gorilla/mux"
 )
 
 type contextKey string
@@ -47,7 +49,7 @@ const IdentityContextKey contextKey = "identity"
 func AuthenticationMiddleware(authenticator sigv4auth.Authenticator, region string, logger *slog.Logger) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			invoker, err := authenticator.Authenticate(r, region, logger)
+                        invoker, err := authenticator.Authenticate(r, region, logger, clock.RealClock{})
 			if err != nil {
 				errorEncoder(r.Context(), err, w)
 				return
