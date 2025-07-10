@@ -79,7 +79,7 @@ func TestVerifyOrigHash_Mismatch(t *testing.T) {
 	stsReq := createTestSTSRequest(t)
 
 	// Modify STS request hash
-	stsReq.Header.Set("X-EventHorizon-Request-Hash", "InvalidHash")
+	stsReq.Header.Set("X-Event-Horizon-Request-Hash", "InvalidHash")
 	err := sigv4auth.VerifyOrigHash(logger)(origReq, stsReq)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "hash mismatch")
@@ -128,15 +128,15 @@ func TestVerifyAmzonDate_Valid(t *testing.T) {
 }
 
 func TestVerifySignedHeaders_Valid(t *testing.T) {
-	err := sigv4auth.VerifySignedHeaders("SignedHeaders=host;x-amz-date;x-eventhorizon-request-hash")
+	err := sigv4auth.VerifySignedHeaders("SignedHeaders=host;x-amz-date;x-event-horizon-request-hash")
 	require.NoError(t, err)
 }
 
 func TestVerifySignedHeaders_MissingHashHeader(t *testing.T) {
-	// Missing the X-EventHorizon-Request-Hash header in SignedHeaders
+	// Missing the X-Event-Horizon-Request-Hash header in SignedHeaders
 	err := sigv4auth.VerifySignedHeaders("SignedHeaders=host;x-amz-date")
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "'X-EventHorizon-Request-Hash' is not a signed header")
+	require.Contains(t, err.Error(), "'X-Event-Horizon-Request-Hash' is not a signed header")
 }
 
 func TestVerifyContentType_Invalid(t *testing.T) {
@@ -171,7 +171,7 @@ func TestVerifyRootPath_Invalid(t *testing.T) {
 func createTestSTSRequest(t *testing.T) *http.Request {
 	// Create a sample STS request
 	stsReq := httptest.NewRequest(http.MethodPost, "https://sts.us-west-2.amazonaws.com", bytes.NewBufferString("Action=GetCallerIdentity&Version=2011-06-15"))
-	stsReq.Header.Set("Authorization", "AWS4-HMAC-SHA256 Credential=test, SignedHeaders=host;x-amz-date;x-eventhorizon-request-hash, Signature=testsignature")
+	stsReq.Header.Set("Authorization", "AWS4-HMAC-SHA256 Credential=test, SignedHeaders=host;x-amz-date;x-event-horizon-request-hash, Signature=testsignature")
 
 	// Generate the correct request hash for the test
 	req := createTestRequest(t)
@@ -180,7 +180,7 @@ func createTestSTSRequest(t *testing.T) *http.Request {
 	require.NoError(t, err)
 
 	// Set the correct request hash in the header
-	stsReq.Header.Set("X-EventHorizon-Request-Hash", actualHash)
+	stsReq.Header.Set("X-Event-Horizon-Request-Hash", actualHash)
 	stsReq.URL.Path = "/"
 	return stsReq
 }
