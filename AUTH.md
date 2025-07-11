@@ -97,18 +97,18 @@ needing access to the AWS_SECRET_ACCESS_KEY.
 We implement this with 2 headers attached to each request to our service:
 
 1. Authorization
-2. X-EventHorizon-SignedHeaders
+2. X-Event-Horizon-Signed-Headers
 
 The first header, Authorization, must contain a valid HTTP/1.1 request encoding a Sigv4 signed request to the
 sts:GetCallerIdentity API. The request should be encoded as a JSON string.  The encoded HTTP request must include the
-header `X-EventHorizon-Request-Hash` that contains the SHA256 hash of the "canonical request" form of the "outer"
+header `X-Event-Horizon-Request-Hash` that contains the SHA256 hash of the "canonical request" form of the "outer"
 HTTP request. See [here](https://docs.aws.amazon.com/IAM/latest/UserGuide/create-signed-request.html) for documentation
 on how to construct a canonical request.
 
-The second header, `X-EventHorizon-SignedHeaders`, must contain a `;` separated list of headers that were included
-when computing the outer request's hash. The list must include its self (`X-EventHorizon-SignedHeaders`).
+The second header, `X-Event-Horizon-Signed-Headers`, must contain a `;` separated list of headers that were included
+when computing the outer request's hash. The list must include its self (`X-Event-Horizon-Signed-Headers`).
 
-The `X-EventHorizon-SignedHeaders` header is necessary because L7 load balancers and proxies (like ALB and API Gatway)
+The `X-Event-Horizon-Signed-Headers` header is necessary because L7 load balancers and proxies (like ALB and API Gatway)
 will often inject headers that were not present in the original request. For example the `X-Forwarded-For` header is commonly
 injected by proxies. We need to exclude such injected headers when computing the hash of the outer request, hence
 why we include the list of headers to include in the signature.

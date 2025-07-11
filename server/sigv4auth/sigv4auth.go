@@ -186,7 +186,7 @@ func VerifyStsReq(origReq *http.Request, stsReq *http.Request, currentRegion str
 
 func VerifyOrigHash(logger *slog.Logger) Verifier {
 	return func(origReq, stsReq *http.Request) error {
-		expectedHash, err := getHeader(stsReq, "X-EventHorizon-Request-Hash")
+		expectedHash, err := getHeader(stsReq, "X-Event-Horizon-Request-Hash")
 		hashedHeaders := sigv4clientutil.GetHashHeaders(origReq)
 		if err != nil {
 			return err
@@ -354,8 +354,8 @@ func VerifySignedHeaders(s string) error {
 	}
 
 	headerList := strings.Split(splits[1], ";")
-	if !slices.Contains(headerList, strings.ToLower("X-EventHorizon-Request-Hash")) {
-		return errors.New("'X-EventHorizon-Request-Hash' is not a signed header")
+	if !slices.Contains(headerList, strings.ToLower("X-Event-Horizon-Request-Hash")) {
+		return errors.New("'X-Event-Horizon-Request-Hash' is not a signed header")
 	}
 	return nil
 }
