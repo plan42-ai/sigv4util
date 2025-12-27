@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/debugging-sucks/clock"
+	"github.com/plan42-ai/clock"
 
-	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
+	sigv4clientutil "github.com/plan42-ai/sigv4util/client"
 )
 
 type Authenticator interface {
@@ -67,7 +67,10 @@ func ParseRequest(requestStr string) (*http.Request, error) {
 	return ret, nil
 }
 
-func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *slog.Logger, clk clock.Clock) (Invoker, error) {
+func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *slog.Logger, clk clock.Clock) (
+	Invoker,
+	error,
+) {
 	headerName := textproto.CanonicalMIMEHeaderKey("Authorization")
 	headerValues := req.Header.Values(headerName)
 	if len(headerValues) == 0 {
@@ -114,7 +117,14 @@ func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		logger.ErrorContext(req.Context(), "call to 'Sts:GetCallerIdentity' failed", "header", headerName, "status", resp.StatusCode)
+		logger.ErrorContext(
+			req.Context(),
+			"call to 'Sts:GetCallerIdentity' failed",
+			"header",
+			headerName,
+			"status",
+			resp.StatusCode,
+		)
 		return Invoker{}, NewAuthenticationError()
 	}
 
@@ -130,7 +140,14 @@ func (a *Service) Authenticate(req *http.Request, currentRegion string, logger *
 
 	err = json.NewDecoder(resp.Body).Decode(&typedResp)
 	if err != nil {
-		logger.ErrorContext(req.Context(), "unable to parse 'Sts:GetCallerIdentity' response", "header", headerName, "error", err)
+		logger.ErrorContext(
+			req.Context(),
+			"unable to parse 'Sts:GetCallerIdentity' response",
+			"header",
+			headerName,
+			"error",
+			err,
+		)
 		return Invoker{}, NewAuthenticationError()
 	}
 
@@ -168,7 +185,13 @@ func IsAssumeRoleArn(arn string) bool {
 	return split[0] == "arn" && split[2] == "sts" && strings.HasPrefix(split[5], "assumed-role/")
 }
 
-func VerifyStsReq(origReq *http.Request, stsReq *http.Request, currentRegion string, logger *slog.Logger, clk clock.Clock) error {
+func VerifyStsReq(
+	origReq *http.Request,
+	stsReq *http.Request,
+	currentRegion string,
+	logger *slog.Logger,
+	clk clock.Clock,
+) error {
 	return verify(
 		origReq,
 		stsReq,

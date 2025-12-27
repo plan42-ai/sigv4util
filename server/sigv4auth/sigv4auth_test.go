@@ -13,9 +13,9 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/debugging-sucks/clock"
-	sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
-	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
+	"github.com/plan42-ai/clock"
+	sigv4clientutil "github.com/plan42-ai/sigv4util/client"
+	"github.com/plan42-ai/sigv4util/server/sigv4auth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -161,7 +161,11 @@ func TestVerifyPostVerb_Invalid(t *testing.T) {
 
 func TestVerifyRootPath_Invalid(t *testing.T) {
 	origReq := createTestRequest(t)
-	stsReq := httptest.NewRequest(http.MethodPost, "https://sts.us-west-2.amazonaws.com/invalid-path", nil) // Should be root "/"
+	stsReq := httptest.NewRequest(
+		http.MethodPost,
+		"https://sts.us-west-2.amazonaws.com/invalid-path",
+		nil,
+	) // Should be root "/"
 
 	err := sigv4auth.VerifyRootPath()(origReq, stsReq)
 	require.Error(t, err)
@@ -170,8 +174,15 @@ func TestVerifyRootPath_Invalid(t *testing.T) {
 
 func createTestSTSRequest(t *testing.T) *http.Request {
 	// Create a sample STS request
-	stsReq := httptest.NewRequest(http.MethodPost, "https://sts.us-west-2.amazonaws.com", bytes.NewBufferString("Action=GetCallerIdentity&Version=2011-06-15"))
-	stsReq.Header.Set("Authorization", "AWS4-HMAC-SHA256 Credential=test, SignedHeaders=host;x-amz-date;x-event-horizon-request-hash, Signature=testsignature")
+	stsReq := httptest.NewRequest(
+		http.MethodPost,
+		"https://sts.us-west-2.amazonaws.com",
+		bytes.NewBufferString("Action=GetCallerIdentity&Version=2011-06-15"),
+	)
+	stsReq.Header.Set(
+		"Authorization",
+		"AWS4-HMAC-SHA256 Credential=test, SignedHeaders=host;x-amz-date;x-event-horizon-request-hash, Signature=testsignature",
+	)
 
 	// Generate the correct request hash for the test
 	req := createTestRequest(t)
@@ -189,13 +200,15 @@ func createTestRequest(t *testing.T) *http.Request {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	cfg := &aws.Config{
-		Credentials: aws.NewCredentialsCache(credentials.StaticCredentialsProvider{
-			Value: aws.Credentials{
-				AccessKeyID:     "AKID",
-				SecretAccessKey: "SECRET",
-				SessionToken:    "TOKEN",
+		Credentials: aws.NewCredentialsCache(
+			credentials.StaticCredentialsProvider{
+				Value: aws.Credentials{
+					AccessKeyID:     "AKID",
+					SecretAccessKey: "SECRET",
+					SessionToken:    "TOKEN",
+				},
 			},
-		}),
+		),
 		Region: "us-west-2",
 	}
 
@@ -230,13 +243,17 @@ func TestAuthenticate_NotAssumeRoleArn(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body: io.NopCloser(bytes.NewBufferString(`{
+			Body: io.NopCloser(
+				bytes.NewBufferString(
+					`{
 				"GetCallerIdentityResponse": {
 					"GetCallerIdentityResult": {
 						"Arn": "arn:aws:iam::123456789012:user/user-name"
 					}
 				}
-			}`)),
+			}`,
+				),
+			),
 		},
 	}
 
@@ -254,13 +271,17 @@ func TestAuthenticate_IsAssumeRoleArn(t *testing.T) {
 		Response: &http.Response{
 			StatusCode: http.StatusOK,
 			Header:     http.Header{"Content-Type": []string{"application/json"}},
-			Body: io.NopCloser(bytes.NewBufferString(`{
+			Body: io.NopCloser(
+				bytes.NewBufferString(
+					`{
 				"GetCallerIdentityResponse": {
 					"GetCallerIdentityResult": {
 						"Arn": "arn:aws:sts::123456789012:assumed-role/role-name/role-session-name"
 					}
 				}
-			}`)),
+			}`,
+				),
+			),
 		},
 	}
 
