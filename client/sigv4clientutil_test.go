@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/debugging-sucks/clock"
+	"github.com/plan42-ai/clock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -76,11 +76,13 @@ func TestCanonicalizeRequest(t *testing.T) {
 
 	for _, tc := range testCases {
 		name := strings.ReplaceAll(tc.requestHTTP.URL.String(), "/", "_")
-		t.Run(name, func(t *testing.T) {
-			canonicalRequest, err := canonicalizeRequest(tc.requestHTTP, 0, HexSha([]byte("")))
-			require.NoError(t, err)
-			require.Equal(t, tc.expectedCanonicalization, canonicalRequest)
-		})
+		t.Run(
+			name, func(t *testing.T) {
+				canonicalRequest, err := canonicalizeRequest(tc.requestHTTP, 0, HexSha([]byte("")))
+				require.NoError(t, err)
+				require.Equal(t, tc.expectedCanonicalization, canonicalRequest)
+			},
+		)
 	}
 }
 
@@ -107,13 +109,15 @@ func TestHexSha(t *testing.T) {
 func TestAddAuthHeaders(t *testing.T) {
 	req, _ := http.NewRequest("GET", "https://example.com", nil)
 	cfg := &aws.Config{
-		Credentials: aws.NewCredentialsCache(credentials.StaticCredentialsProvider{
-			Value: aws.Credentials{
-				AccessKeyID:     "AKID",
-				SecretAccessKey: "SECRET_KEY",
-				SessionToken:    "TOKEN",
+		Credentials: aws.NewCredentialsCache(
+			credentials.StaticCredentialsProvider{
+				Value: aws.Credentials{
+					AccessKeyID:     "AKID",
+					SecretAccessKey: "SECRET_KEY",
+					SessionToken:    "TOKEN",
+				},
 			},
-		}),
+		),
 		Region: "us-west-2",
 	}
 

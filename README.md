@@ -1,9 +1,3 @@
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=agile-security_sigv4util&metric=alert_status&token=8fd69c4bf9036886ddb141d60b9379a218168cfa)](https://sonarcloud.io/summary/new_code?id=agile-security_sigv4util)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=agile-security_sigv4util&metric=coverage&token=8fd69c4bf9036886ddb141d60b9379a218168cfa)](https://sonarcloud.io/summary/new_code?id=agile-security_sigv4util)
-[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=agile-security_sigv4util&metric=bugs&token=8fd69c4bf9036886ddb141d60b9379a218168cfa)](https://sonarcloud.io/summary/new_code?id=agile-security_sigv4util)
-[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=agile-security_sigv4util&metric=code_smells&token=8fd69c4bf9036886ddb141d60b9379a218168cfa)](https://sonarcloud.io/summary/new_code?id=agile-security_sigv4util)
-[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=agile-security_sigv4util&metric=vulnerabilities&token=8fd69c4bf9036886ddb141d60b9379a218168cfa)](https://sonarcloud.io/summary/new_code?id=agile-security_sigv4util)
-
 # sigv4util
 Go module used for SigV4 auth in Agile Security services
 
@@ -12,8 +6,8 @@ Go module used for SigV4 auth in Agile Security services
 1. Import the module
 ```go
 import (
-        sigv4clientutil "github.com/debugging-sucks/sigv4util/client"
-        "github.com/debugging-sucks/clock"
+        sigv4clientutil "github.com/plan42-ai/sigv4util/client"
+        "github.com/plan42-ai/clock"
 )
 ```
 
@@ -37,8 +31,8 @@ import (
         "log/slog"
         "net/http"
 
-        "github.com/debugging-sucks/clock"
-        "github.com/debugging-sucks/sigv4util/server/sigv4auth"
+        "github.com/plan42-ai/clock"
+        "github.com/plan42-ai/sigv4util/server/sigv4auth"
         "github.com/gorilla/mux"
 )
 
@@ -76,7 +70,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/debugging-sucks/sigv4util/server/sigv4auth"
+	"github.com/plan42-ai/sigv4util/server/sigv4auth"
 	"github.com/samber/lo"
 
 	"github.com/gorilla/mux"

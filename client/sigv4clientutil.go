@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/debugging-sucks/clock"
+	"github.com/plan42-ai/clock"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
@@ -290,7 +290,15 @@ func AddAuthHeaders(ctx context.Context, req *http.Request, cfg *aws.Config, reg
 	return nil
 }
 
-func AddAuthHeader(ctx context.Context, req *http.Request, creds aws.Credentials, signer *v4.Signer, requestHash string, region string, clk clock.Clock) error {
+func AddAuthHeader(
+	ctx context.Context,
+	req *http.Request,
+	creds aws.Credentials,
+	signer *v4.Signer,
+	requestHash string,
+	region string,
+	clk clock.Clock,
+) error {
 	stsReq, stsBodyHash, err := CreateStsReq(requestHash, region)
 	if err != nil {
 		return err
